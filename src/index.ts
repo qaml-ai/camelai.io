@@ -2,34 +2,36 @@ const MARKDOWN = `# camelai.io — x402 API Network
 
 Pay-per-request APIs for AI agents. No API keys, no subscriptions — just USDC micropayments on Base via the [x402 protocol](https://x402.org).
 
+Every service accepts natural language. Just POST \`{"input": "what you want"}\` and an LLM extracts the right parameters for you.
+
 ## Services
 
-| Service | Domain | Method | Price | Description |
-|---------|--------|--------|-------|-------------|
-| QR Code | [qr.camelai.io](https://qr.camelai.io) | GET /generate | $0.001 | Generate QR codes from text (SVG) |
-| Screenshot | [screenshot.camelai.io](https://screenshot.camelai.io) | GET /screenshot | $0.005 | Capture website screenshots (PNG) |
-| Email Verify | [verify.camelai.io](https://verify.camelai.io) | GET /verify | $0.001 | Validate email addresses |
-| DNS Lookup | [dns.camelai.io](https://dns.camelai.io) | GET /dns, /whois | $0.001 | DNS records and WHOIS data |
-| Web Scraper | [scraper.camelai.io](https://scraper.camelai.io) | GET /scrape | $0.005 | Extract content from web pages |
-| Geocoding | [geo.camelai.io](https://geo.camelai.io) | GET /geocode, /reverse | $0.001 | Address to coordinates and reverse |
-| Image Resize | [resize.camelai.io](https://resize.camelai.io) | GET /resize | $0.001 | Resize images by URL |
-| URL Shortener | [link.camelai.io](https://link.camelai.io) | POST /shorten | $0.001 | Shorten URLs |
-| Image Gen | [imagegen.camelai.io](https://imagegen.camelai.io) | POST /generate | $0.01 | Generate images from text prompts |
-| Disposable Email | [inbox.camelai.io](https://inbox.camelai.io) | POST /inbox | $0.001 | Create temporary email inboxes |
-| SMS Send | [sms.camelai.io](https://sms.camelai.io) | POST /send | $0.01 | Send SMS messages |
-| PDF to Text | [pdf.camelai.io](https://pdf.camelai.io) | POST /extract | $0.005 | Extract text from PDFs |
-| GPU | [gpu.camelai.io](https://gpu.camelai.io) | POST /create | $0.50 | Provision GPU instances |
-| VPS | [vps.camelai.io](https://vps.camelai.io) | POST /create | $0.10 | Provision virtual servers |
-| Browser Session | [browser.camelai.io](https://browser.camelai.io) | POST /session | $0.01 | Remote browser sessions |
-| Deploy Worker | [deploy.camelai.io](https://deploy.camelai.io) | POST /deploy | $0.01 | Deploy Cloudflare Workers |
+| Service | Domain | Price | Example Input |
+|---------|--------|-------|---------------|
+| QR Code | [qr.camelai.io](https://qr.camelai.io) | $0.001 | "make a QR code for https://example.com" |
+| Screenshot | [screenshot.camelai.io](https://screenshot.camelai.io) | $0.005 | "screenshot https://example.com as pdf" |
+| Email Verify | [verify.camelai.io](https://verify.camelai.io) | $0.001 | "is test@example.com a real address?" |
+| DNS Lookup | [dns.camelai.io](https://dns.camelai.io) | $0.001 | "DNS records for example.com" |
+| Web Scraper | [scraper.camelai.io](https://scraper.camelai.io) | $0.005 | "scrape the main content from https://example.com" |
+| Geocoding | [geo.camelai.io](https://geo.camelai.io) | $0.001 | "coordinates for 1600 Amphitheatre Parkway" |
+| Image Resize | [resize.camelai.io](https://resize.camelai.io) | $0.001 | "resize https://example.com/photo.jpg to 200x200" |
+| URL Shortener | [link.camelai.io](https://link.camelai.io) | $0.001 | "shorten https://example.com/very/long/path" |
+| Image Gen | [imagegen.camelai.io](https://imagegen.camelai.io) | $0.01 | "a sunset over mountains in watercolor style" |
+| Disposable Email | [inbox.camelai.io](https://inbox.camelai.io) | $0.001 | "create a temporary inbox" |
+| SMS Send | [sms.camelai.io](https://sms.camelai.io) | $0.01 | "send hello to +15551234567" |
+| PDF to Text | [pdf.camelai.io](https://pdf.camelai.io) | $0.005 | "extract text from https://example.com/doc.pdf" |
+| GPU | [gpu.camelai.io](https://gpu.camelai.io) | $0.50 | "spin up an A100 with pytorch image" |
+| VPS | [vps.camelai.io](https://vps.camelai.io) | $0.10 | "create a small server in us-east for 60 minutes" |
+| Browser Session | [browser.camelai.io](https://browser.camelai.io) | $0.01 | "start a remote browser session" |
+| Deploy Worker | [deploy.camelai.io](https://deploy.camelai.io) | $0.01 | "deploy this worker that returns hello world" |
 
 ## How It Works
 
-1. Make a request to any endpoint above
+1. \`POST\` to any service with \`{"input": "your request in plain English"}\`
 2. Receive a \`402 Payment Required\` response with payment details
 3. Sign a USDC payment on Base using your wallet
-4. Resend the request with the \`payment-signature\` header
-5. Get your response
+4. Resend the request with the payment header
+5. An LLM interprets your input, extracts the parameters, and returns the result
 
 ## Quick Start (Node.js)
 
@@ -43,17 +45,22 @@ const client = new x402Client();
 registerExactEvmScheme(client, { signer });
 const pay = wrapFetchWithPayment(fetch, client);
 
-const res = await pay("https://qr.camelai.io/generate?text=hello");
+const res = await pay("https://qr.camelai.io", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ input: "QR code for https://example.com" }),
+});
 \`\`\`
 
 ## Quick Start (purl CLI)
 
 \`\`\`bash
-purl "https://qr.camelai.io/generate?text=hello"
+purl -X POST -d '{"input": "QR code for https://example.com"}' https://qr.camelai.io
 \`\`\`
 
 ## Details
 
+- **Input:** All services accept \`POST /\` with \`{"input": "natural language"}\`
 - **Network:** Base (Chain ID 8453)
 - **Currency:** USDC
 - **Facilitator:** Coinbase CDP (fee-free, KYT/OFAC compliant)
