@@ -108,6 +108,35 @@ const HTML = `<!DOCTYPE html>
 </script>
 </html>`;
 
+const SERVICES = [
+  { name: "QR Code", domain: "qr.camelai.io", price: "$0.001", description: "Generate QR codes from text (SVG)", example: "make a QR code for https://example.com" },
+  { name: "Screenshot", domain: "screenshot.camelai.io", price: "$0.005", description: "Capture website screenshots (PNG/PDF)", example: "screenshot https://example.com as pdf" },
+  { name: "Email Verify", domain: "verify.camelai.io", price: "$0.001", description: "Validate email addresses", example: "is test@example.com a real address?" },
+  { name: "DNS Lookup", domain: "dns.camelai.io", price: "$0.001", description: "DNS records and WHOIS data", example: "DNS records for example.com" },
+  { name: "Web Scraper", domain: "scraper.camelai.io", price: "$0.005", description: "Extract content from web pages", example: "scrape the main content from https://example.com" },
+  { name: "Geocoding", domain: "geo.camelai.io", price: "$0.001", description: "Address to coordinates and reverse", example: "coordinates for 1600 Amphitheatre Parkway" },
+  { name: "Image Resize", domain: "resize.camelai.io", price: "$0.001", description: "Resize images by URL", example: "resize https://example.com/photo.jpg to 200x200" },
+  { name: "URL Shortener", domain: "link.camelai.io", price: "$0.001", description: "Shorten URLs", example: "shorten https://example.com/very/long/path" },
+  { name: "Image Gen", domain: "imagegen.camelai.io", price: "$0.01", description: "Generate images from text prompts", example: "a sunset over mountains in watercolor style" },
+  { name: "Disposable Email", domain: "inbox.camelai.io", price: "$0.001", description: "Create temporary email inboxes", example: "create a temporary inbox" },
+  { name: "SMS Send", domain: "sms.camelai.io", price: "$0.01", description: "Send SMS messages", example: "send hello to +15551234567" },
+  { name: "PDF to Text", domain: "pdf.camelai.io", price: "$0.005", description: "Extract text from PDFs", example: "extract text from https://example.com/doc.pdf" },
+  { name: "GPU", domain: "gpu.camelai.io", price: "$0.50", description: "Provision GPU instances", example: "spin up an A100 with pytorch image" },
+  { name: "VPS", domain: "vps.camelai.io", price: "$0.10", description: "Provision virtual servers", example: "create a small server in us-east for 60 minutes" },
+  { name: "Browser Session", domain: "browser.camelai.io", price: "$0.01", description: "Remote browser sessions", example: "start a remote browser session" },
+  { name: "Deploy Worker", domain: "deploy.camelai.io", price: "$0.01", description: "Deploy Cloudflare Workers", example: "deploy this worker that returns hello world" },
+];
+
+const SERVICES_JSON = JSON.stringify({
+  name: "camelai.io",
+  description: "Pay-per-request APIs for AI agents via x402 micropayments on Base",
+  protocol: "x402",
+  network: "eip155:8453",
+  currency: "USDC",
+  input: { method: "POST", path: "/", contentType: "application/json", body: { input: { type: "string", description: "Natural language request interpreted by an LLM", required: true } } },
+  services: SERVICES.map(s => ({ ...s, url: `https://${s.domain}`, openapi: `https://${s.domain}/.well-known/openapi.json` })),
+}, null, 2);
+
 function prefersMarkdown(request: Request): boolean {
   const accept = request.headers.get("Accept") || "";
   let mdQ = 0;
@@ -124,6 +153,15 @@ function prefersMarkdown(request: Request): boolean {
 export default {
   fetch(request: Request) {
     const url = new URL(request.url);
+    if (url.pathname === "/.well-known/services.json") {
+      return new Response(SERVICES_JSON, {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "public, max-age=3600",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
     if (url.searchParams.get("format") === "markdown" || prefersMarkdown(request)) {
       return new Response(MARKDOWN, {
         headers: {
