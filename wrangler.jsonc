@@ -1,0 +1,14 @@
+{
+  "name": "x402-docs",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-12",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "camelai.io",
+      "custom_domain": true
+    }
+  ]
+}
