@@ -2,37 +2,37 @@ const MARKDOWN = `# camelai.io — x402 API Network
 
 Pay-per-request APIs for AI agents. No API keys, no subscriptions — just USDC micropayments on Base via the [x402 protocol](https://x402.org).
 
-Every service accepts natural language. Just POST \`{"input": "what you want"}\` and an LLM extracts the right parameters for you.
+Each service has a simple JSON API with explicit fields — no natural language parsing needed.
 
 ## Services
 
-| Service | Domain | Price | Example Input |
-|---------|--------|-------|---------------|
-| QR Code | [qr.camelai.io](https://qr.camelai.io) | $0.001 | "make a QR code for https://example.com" |
-| Screenshot | [screenshot.camelai.io](https://screenshot.camelai.io) | $0.005 | "screenshot https://example.com as pdf" |
-| Email Verify | [verify.camelai.io](https://verify.camelai.io) | $0.001 | "is test@example.com a real address?" |
-| DNS Lookup | [dns.camelai.io](https://dns.camelai.io) | $0.001 | "DNS records for example.com" |
-| Web Scraper | [scraper.camelai.io](https://scraper.camelai.io) | $0.005 | "scrape the main content from https://example.com" |
-| Geocoding | [geo.camelai.io](https://geo.camelai.io) | $0.001 | "coordinates for 1600 Amphitheatre Parkway" |
-| Image Resize | [resize.camelai.io](https://resize.camelai.io) | $0.001 | "resize https://example.com/photo.jpg to 200x200" |
-| URL Shortener | [link.camelai.io](https://link.camelai.io) | $0.001 | "shorten https://example.com/very/long/path" |
-| Image Gen | [imagegen.camelai.io](https://imagegen.camelai.io) | $0.01 | "a sunset over mountains in watercolor style" |
-| Disposable Email | [inbox.camelai.io](https://inbox.camelai.io) | $0.001 | "create a temporary inbox" |
-| SMS Send | [sms.camelai.io](https://sms.camelai.io) | $0.01 | "send hello to +15551234567" |
-| PDF to Text | [pdf.camelai.io](https://pdf.camelai.io) | $0.005 | "extract text from https://example.com/doc.pdf" |
-| GPU | [gpu.camelai.io](https://gpu.camelai.io) | $0.50 | "spin up an A100 with pytorch image" |
-| VPS | [vps.camelai.io](https://vps.camelai.io) | $0.10 | "create a small server in us-east for 60 minutes" |
-| Browser Session | [browser.camelai.io](https://browser.camelai.io) | $0.02 | POST /session (no input) returns CDP websocket for Puppeteer/Playwright. POST / for natural language actions. |
-| Deploy Worker | [deploy.camelai.io](https://deploy.camelai.io) | $0.01 | "deploy this worker that returns hello world" |
+| Service | Domain | Price | Example Body |
+|---------|--------|-------|-------------|
+| QR Code | [qr.camelai.io](https://qr.camelai.io) | $0.001 | \`{"text": "https://example.com"}\` |
+| Screenshot | [screenshot.camelai.io](https://screenshot.camelai.io) | $0.01 | \`{"url": "https://example.com", "format": "png"}\` |
+| Email Verify | [verify.camelai.io](https://verify.camelai.io) | $0.005 | \`{"email": "user@example.com"}\` |
+| DNS Lookup | [dns.camelai.io](https://dns.camelai.io) | $0.001 | \`{"input": "DNS records for example.com"}\` |
+| Web Scraper | [scraper.camelai.io](https://scraper.camelai.io) | $0.005 | \`{"input": "scrape https://example.com"}\` |
+| Geocoding | [geo.camelai.io](https://geo.camelai.io) | $0.001 | \`{"input": "coordinates for 1600 Amphitheatre Parkway"}\` |
+| Image Resize | [resize.camelai.io](https://resize.camelai.io) | $0.001 | \`{"input": "resize https://example.com/photo.jpg to 200x200"}\` |
+| URL Shortener | [link.camelai.io](https://link.camelai.io) | $0.001 | \`{"url": "https://example.com/long/path"}\` |
+| Image Gen | [imagegen.camelai.io](https://imagegen.camelai.io) | $0.01 | \`{"input": "a sunset over mountains in watercolor style"}\` |
+| Disposable Email | [inbox.camelai.io](https://inbox.camelai.io) | $0.005 | POST \`/\` (no body) to create, POST \`/check\` with \`{"inbox_id": "..."}\` to read |
+| SMS Send | [sms.camelai.io](https://sms.camelai.io) | $0.01 | \`{"to": "+15551234567", "message": "Hello"}\` |
+| PDF to Text | [pdf.camelai.io](https://pdf.camelai.io) | $0.01 | \`{"url": "https://example.com/doc.pdf"}\` |
+| GPU | [gpu.camelai.io](https://gpu.camelai.io) | $0.50 | \`{"input": "spin up an A100 with pytorch image"}\` |
+| VPS | [vps.camelai.io](https://vps.camelai.io) | $0.005–$0.129 | POST \`/basic-30\` or \`/standard-60\` — see [full API](https://vps.camelai.io) |
+| Browser Session | [browser.camelai.io](https://browser.camelai.io) | $0.02 | POST \`/session\` (no body) for CDP websocket, POST \`/\` with \`{"input": "..."}\` for actions |
+| Deploy Worker | [deploy.camelai.io](https://deploy.camelai.io) | $0.01 | \`{"input": "deploy this worker that returns hello world"}\` |
 | File Upload | [files.camelai.io](https://files.camelai.io) | $0.001 | Upload raw file body, get a temporary signed URL (1hr) |
 
 ## How It Works
 
-1. \`POST\` to any service with \`{"input": "your request in plain English"}\`
+1. \`POST\` to any service with the required JSON fields
 2. Receive a \`402 Payment Required\` response with payment details
 3. Sign a USDC payment on Base using your wallet
 4. Resend the request with the payment header
-5. An LLM interprets your input, extracts the parameters, and returns the result
+5. Get your result
 
 ## Quick Start (Node.js)
 
@@ -49,37 +49,70 @@ const pay = wrapFetchWithPayment(fetch, client);
 const res = await pay("https://qr.camelai.io", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ input: "QR code for https://example.com" }),
+  body: JSON.stringify({ text: "https://example.com" }),
 });
 \`\`\`
 
 ## Quick Start (purl CLI)
 
 \`\`\`bash
-purl -X POST -d '{"input": "QR code for https://example.com"}' https://qr.camelai.io
+purl -X POST -d '{"text": "https://example.com"}' https://qr.camelai.io
 \`\`\`
 
 ## Details
 
-- **Input:** All services accept \`POST /\` with \`{"input": "natural language"}\`
-- **Network:** Base (Chain ID 8453)
-- **Currency:** USDC
+- **Input:** Each service accepts \`POST /\` with typed JSON fields (see table above). Some services use \`{"input": "..."}\` for natural language.
+- **Networks:** Base (eip155:8453), Polygon (eip155:137), Solana — all USDC
 - **Facilitator:** Coinbase CDP (fee-free, KYT/OFAC compliant)
 - **OpenAPI:** Each service exposes \`/.well-known/openapi.json\`
+- **Service Index:** [/.well-known/services.json](https://camelai.io/.well-known/services.json)
 - **Bazaar:** All services are discoverable via the [CDP Bazaar](https://docs.cdp.coinbase.com/x402/bazaar)
-- **File Uploads:** Need to pass a local file to a service? Upload it to [files.camelai.io](https://files.camelai.io) first to get a temporary URL, then pass that URL in your input.
+- **File Uploads:** Upload to [files.camelai.io](https://files.camelai.io) first to get a temporary URL, then pass that URL to other services.
+
+## VPS / Sandbox
+
+[vps.camelai.io](https://vps.camelai.io) provides time-boxed Ubuntu sandboxes on Cloudflare with Python, Node.js, and git pre-installed. Pay once, then use all endpoints for free until it expires.
+
+**Tiers:** POST to create — price is at Cloudflare cost, no markup.
+
+| Endpoint | Size | Duration | Price |
+|----------|------|----------|-------|
+| \`POST /basic-10\` | 1/4 vCPU, 1GB RAM | 10 min | $0.005 |
+| \`POST /basic-30\` | 1/4 vCPU, 1GB RAM | 30 min | $0.014 |
+| \`POST /basic-60\` | 1/4 vCPU, 1GB RAM | 60 min | $0.028 |
+| \`POST /standard-10\` | 1 vCPU, 6GB RAM | 10 min | $0.022 |
+| \`POST /standard-30\` | 1 vCPU, 6GB RAM | 30 min | $0.065 |
+| \`POST /standard-60\` | 1 vCPU, 6GB RAM | 60 min | $0.129 |
+
+**Free endpoints (after creation):**
+
+| Endpoint | Description |
+|----------|-------------|
+| \`POST /exec/:id\` | Run a shell command |
+| \`PUT /file/:id\` | Write a file |
+| \`GET /file/:id?path=\` | Read a file |
+| \`DELETE /file/:id?path=\` | Delete a file |
+| \`POST /mkdir/:id\` | Create directories |
+| \`POST /git/:id\` | Clone a git repo |
+| \`POST /run-code/:id\` | Execute Python/JS with rich output |
+| \`POST /start-process/:id\` | Start a background process (with \`wait_for_port\`) |
+| \`GET /processes/:id\` | List running processes |
+| \`DELETE /process/:id/:pid\` | Kill a process |
+| \`POST /expose/:id\` | Expose a port (returns a public preview URL) |
+| \`GET /status/:id\` | Check sandbox status |
+| \`DELETE /destroy/:id\` | Destroy sandbox early |
 
 ## Payment Methods
 
 camelai.io supports two ways to pay for API requests:
 
-### x402 (Crypto — USDC on Base)
+### x402 (USDC)
 
-The native payment method. Your agent signs a USDC micropayment on Base for each request — no API keys, no accounts, no subscriptions. This is the default and recommended method for AI agents.
+The native payment method. Your agent signs a USDC micropayment for each request — no API keys, no accounts, no subscriptions.
 
-- **Currency:** USDC on Base (Chain ID 8453)
+- **Networks:** Base, Polygon, or Solana (USDC on any)
 - **Cost:** Fractions of a cent per request
-- **Libraries:** [\`@x402/fetch\`](https://www.npmjs.com/package/@x402/fetch) + [\`@x402/evm\`](https://www.npmjs.com/package/@x402/evm) (Node.js) or [\`purl\`](https://github.com/nichochar/purl) (CLI)
+- **Libraries:** [\`@x402/fetch\`](https://www.npmjs.com/package/@x402/fetch) + [\`@x402/evm\`](https://www.npmjs.com/package/@x402/evm) (Node.js) or [\`purl\`](https://github.com/stripe/purl) (CLI)
 
 ### Stripe (Credit Card)
 
@@ -112,7 +145,7 @@ You can also use [\`purl\`](https://github.com/stripe/purl) to create and manage
 
 The easiest way to buy and send USDC is the **Base** app (formerly Coinbase Wallet):
 
-1. **Download** the Base app — [iOS](https://apps.apple.com/app/coinbase-wallet-nfts-crypto/id1278383455) · [Android](https://play.google.com/store/apps/details?id=org.toshi)
+1. **Download** the Base app — [iOS](https://apps.apple.com/app/base-web3-wallet/id1278383455) · [Android](https://play.google.com/store/apps/details?id=org.toshi)
 2. **Create a wallet** and back up your recovery phrase
 3. **Buy USDC** — tap Buy → select USDC → make sure the network is **Base** → pay with Apple Pay, Google Pay, or a debit card
 4. **Send USDC to your agent** — tap Send → paste your agent's wallet address → choose an amount ($5–$10 is plenty to start)
@@ -136,93 +169,45 @@ const pay = wrapFetchWithPayment(fetch, client);
 const res = await pay("https://qr.camelai.io", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ input: "QR code for https://example.com" }),
+  body: JSON.stringify({ text: "https://example.com" }),
 });
 \`\`\`
 
-Built by [qaml-ai](https://github.com/qaml-ai)
+Built by [camelAI](https://github.com/qaml-ai)
 `;
 
-const HTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>camelai.io — x402 API Network</title>
-  <style>
-    body { max-width: 900px; margin: 40px auto; padding: 0 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #1a1a2e; background: #fafafa; line-height: 1.6; }
-    h1 { border-bottom: 2px solid #e0e0e0; padding-bottom: 12px; }
-    h2 { margin-top: 2em; color: #16213e; }
-    a { color: #0f3460; }
-    table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 14px; }
-    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
-    th { background: #16213e; color: white; }
-    tr:nth-child(even) { background: #f2f2f2; }
-    code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
-    pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 8px; overflow-x: auto; }
-    pre code { background: none; color: inherit; padding: 0; }
-    .toolbar { display: flex; gap: 8px; margin-bottom: 16px; }
-    .toolbar a, .toolbar button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1px solid #ccc; border-radius: 6px; background: white; color: #1a1a2e; font-size: 13px; text-decoration: none; cursor: pointer; font-family: inherit; }
-    .toolbar a:hover, .toolbar button:hover { background: #f0f0f0; }
-    .toolbar button.copied { background: #16213e; color: white; border-color: #16213e; }
-  </style>
-</head>
-<body>
-  <div class="toolbar">
-    <button id="copy-md" onclick="navigator.clipboard.writeText(MD).then(()=>{this.textContent='Copied!';this.classList.add('copied');setTimeout(()=>{this.textContent='Copy as Markdown';this.classList.remove('copied')},2000)})">Copy as Markdown</button>
-    <a href="/?format=markdown">View as Markdown</a>
-  </div>
-  <div id="content"></div>
-</body>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script>
-  const MD = ${JSON.stringify(MARKDOWN)};
-  document.getElementById('content').innerHTML = marked.parse(MD);
-</script>
-</html>`;
+// No HTML version — always serve markdown
 
 const SERVICES = [
-  { name: "QR Code", domain: "qr.camelai.io", price: "$0.001", description: "Generate QR codes from text (SVG)", example: "make a QR code for https://example.com" },
-  { name: "Screenshot", domain: "screenshot.camelai.io", price: "$0.005", description: "Capture website screenshots (PNG/PDF)", example: "screenshot https://example.com as pdf" },
-  { name: "Email Verify", domain: "verify.camelai.io", price: "$0.001", description: "Validate email addresses", example: "is test@example.com a real address?" },
-  { name: "DNS Lookup", domain: "dns.camelai.io", price: "$0.001", description: "DNS records and WHOIS data", example: "DNS records for example.com" },
-  { name: "Web Scraper", domain: "scraper.camelai.io", price: "$0.005", description: "Extract content from web pages", example: "scrape the main content from https://example.com" },
-  { name: "Geocoding", domain: "geo.camelai.io", price: "$0.001", description: "Address to coordinates and reverse", example: "coordinates for 1600 Amphitheatre Parkway" },
-  { name: "Image Resize", domain: "resize.camelai.io", price: "$0.001", description: "Resize images by URL", example: "resize https://example.com/photo.jpg to 200x200" },
-  { name: "URL Shortener", domain: "link.camelai.io", price: "$0.001", description: "Shorten URLs", example: "shorten https://example.com/very/long/path" },
-  { name: "Image Gen", domain: "imagegen.camelai.io", price: "$0.01", description: "Generate images from text prompts", example: "a sunset over mountains in watercolor style" },
-  { name: "Disposable Email", domain: "inbox.camelai.io", price: "$0.001", description: "Create temporary email inboxes", example: "create a temporary inbox" },
-  { name: "SMS Send", domain: "sms.camelai.io", price: "$0.01", description: "Send SMS messages", example: "send hello to +15551234567" },
-  { name: "PDF to Text", domain: "pdf.camelai.io", price: "$0.005", description: "Extract text from PDFs", example: "extract text from https://example.com/doc.pdf" },
-  { name: "GPU", domain: "gpu.camelai.io", price: "$0.50", description: "Provision GPU instances", example: "spin up an A100 with pytorch image" },
-  { name: "VPS", domain: "vps.camelai.io", price: "$0.10", description: "Provision virtual servers", example: "create a small server in us-east for 60 minutes" },
-  { name: "Browser Session", domain: "browser.camelai.io", price: "$0.02", description: "Headless browser automation. POST /session (no input) returns a CDP websocket endpoint for Puppeteer/Playwright. POST / accepts natural language for actions (navigate, click, type, screenshot, close).", example: "POST /session to get ws_endpoint, or POST / with {\"input\": \"navigate to https://example.com\"}" },
-  { name: "Deploy Worker", domain: "deploy.camelai.io", price: "$0.01", description: "Deploy Cloudflare Workers", example: "deploy this worker that returns hello world" },
-  { name: "File Upload", domain: "files.camelai.io", price: "$0.001", description: "Upload files and get temporary signed URLs (1hr). Use this to get a URL for services that accept file URLs (e.g. image-resize, pdf-to-text).", example: "POST raw file body with Content-Type header" },
+  { name: "QR Code", domain: "qr.camelai.io", price: "$0.001", description: "Generate QR codes from text (SVG)", example: '{"text": "https://example.com"}' },
+  { name: "Screenshot", domain: "screenshot.camelai.io", price: "$0.01", description: "Capture website screenshots (PNG/PDF)", example: '{"url": "https://example.com", "format": "png"}' },
+  { name: "Email Verify", domain: "verify.camelai.io", price: "$0.005", description: "Validate email addresses", example: '{"email": "user@example.com"}' },
+  { name: "DNS Lookup", domain: "dns.camelai.io", price: "$0.001", description: "DNS records and WHOIS data", example: '{"input": "DNS records for example.com"}' },
+  { name: "Web Scraper", domain: "scraper.camelai.io", price: "$0.005", description: "Extract content from web pages", example: '{"input": "scrape https://example.com"}' },
+  { name: "Geocoding", domain: "geo.camelai.io", price: "$0.001", description: "Address to coordinates and reverse", example: '{"input": "coordinates for 1600 Amphitheatre Parkway"}' },
+  { name: "Image Resize", domain: "resize.camelai.io", price: "$0.001", description: "Resize images by URL", example: '{"input": "resize https://example.com/photo.jpg to 200x200"}' },
+  { name: "URL Shortener", domain: "link.camelai.io", price: "$0.001", description: "Shorten URLs", example: '{"url": "https://example.com/very/long/path"}' },
+  { name: "Image Gen", domain: "imagegen.camelai.io", price: "$0.01", description: "Generate images from text prompts", example: '{"input": "a sunset over mountains in watercolor style"}' },
+  { name: "Disposable Email", domain: "inbox.camelai.io", price: "$0.005", description: "Create temporary email inboxes. POST / to create, POST /check with inbox_id to read.", example: "POST / (no body) to create, POST /check with {\"inbox_id\": \"...\"}" },
+  { name: "SMS Send", domain: "sms.camelai.io", price: "$0.01", description: "Send SMS messages", example: '{"to": "+15551234567", "message": "Hello"}' },
+  { name: "PDF to Text", domain: "pdf.camelai.io", price: "$0.01", description: "Extract text from PDFs", example: '{"url": "https://example.com/doc.pdf"}' },
+  { name: "GPU", domain: "gpu.camelai.io", price: "$0.50", description: "Provision GPU instances", example: '{"input": "spin up an A100 with pytorch image"}' },
+  { name: "VPS", domain: "vps.camelai.io", price: "$0.005–$0.129", description: "Time-boxed Ubuntu sandboxes with exec, file ops, git, code execution, and port exposure. Priced at Cloudflare cost.", example: "POST /basic-30 to create, then POST /exec/:id, /file/:id, /git/:id, /expose/:id" },
+  { name: "Browser Session", domain: "browser.camelai.io", price: "$0.02", description: "Headless browser automation. POST /session for CDP websocket. POST / for natural language actions.", example: "POST /session for ws_endpoint, POST / with {\"input\": \"navigate to https://example.com\"}" },
+  { name: "Deploy Worker", domain: "deploy.camelai.io", price: "$0.01", description: "Deploy Cloudflare Workers", example: '{"input": "deploy this worker that returns hello world"}' },
+  { name: "File Upload", domain: "files.camelai.io", price: "$0.001", description: "Upload files and get temporary signed URLs (1hr).", example: "POST raw file body with Content-Type header" },
 ];
 
 const SERVICES_JSON = JSON.stringify({
   name: "camelai.io",
   description: "Pay-per-request APIs for AI agents via x402 micropayments on Base",
   protocol: "x402",
-  network: "eip155:8453",
+  networks: ["eip155:8453", "eip155:137", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
   currency: "USDC",
-  input: { method: "POST", path: "/", contentType: "application/json", body: { input: { type: "string", description: "Natural language request interpreted by an LLM", required: true } } },
   services: SERVICES.map(s => ({ ...s, url: `https://${s.domain}`, openapi: `https://${s.domain}/.well-known/openapi.json` })),
 }, null, 2);
 
-function prefersMarkdown(request: Request): boolean {
-  const accept = request.headers.get("Accept") || "";
-  let mdQ = 0;
-  let htmlQ = 0;
-  for (const part of accept.split(",")) {
-    const trimmed = part.trim();
-    const q = parseFloat(trimmed.match(/;\s*q=(\d+\.?\d*)/)?.[1] ?? "1");
-    if (trimmed.startsWith("text/markdown")) mdQ = q;
-    else if (trimmed.startsWith("text/html")) htmlQ = q;
-  }
-  return mdQ > 0 && mdQ >= htmlQ;
-}
+// Markdown is always served
 
 interface StripeConfig {
   creditPrices: Record<string, { priceId: string; amountCents: number }>;
@@ -415,7 +400,7 @@ function renderSuccessPage(apiKey: string, credits: string, isTest: boolean): Re
   <div class="info">
     <p><strong>Usage:</strong></p>
     <p><code>curl -X POST -H "Authorization: Bearer ${apiKey}" -H "Content-Type: application/json" -d '{"input": "..."}' https://qr.camelai.io</code></p>
-    <p>Works on all <a href="/">camelai.io services</a>. No crypto wallet needed.</p>
+    <p>Works on all <a href="/">camelai.io services</a>. No wallet needed.</p>
   </div>
 </body></html>`;
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
@@ -518,20 +503,10 @@ export default {
       });
     }
 
-    // Markdown
-    if (url.searchParams.get("format") === "markdown" || prefersMarkdown(request)) {
-      return new Response(MARKDOWN, {
-        headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
-          "Cache-Control": "public, max-age=3600",
-        },
-      });
-    }
-
-    // HTML
-    return new Response(HTML, {
+    // Always serve markdown
+    return new Response(MARKDOWN, {
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
+        "Content-Type": "text/markdown; charset=utf-8",
         "Cache-Control": "public, max-age=3600",
       },
     });
