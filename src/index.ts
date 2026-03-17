@@ -75,8 +75,14 @@ const res = await pay("https://qr.camelai.io", {
 [purl](https://github.com/stripe/purl) is a curl-like CLI with built-in x402 support. Import the wallet you created above:
 
 \`\`\`bash
-brew install stripe/purl/purl
-purl wallet add --type evm --name my-agent --private-key $WALLET_PRIVATE_KEY --password mypass --set-active
+# Install (pick one)
+brew install stripe/purl/purl   # macOS
+cargo install purl               # or via Rust
+
+# Import the wallet you created above
+purl wallet add --type evm --name my-agent --private-key $WALLET_PRIVATE_KEY --password mypass --set-active=true
+
+# Make requests
 purl --password mypass -X POST -d '{"text": "https://example.com"}' https://qr.camelai.io
 \`\`\`
 
