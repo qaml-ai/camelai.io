@@ -34,18 +34,26 @@ Each service has its own docs at its domain. Visit any service URL for full API 
 4. Resend the request with the payment header
 5. Get your result
 
-## Quick Start
+## Quick Start (Node.js — recommended)
 
-\`\`\`bash
-# Install purl (Stripe's x402 CLI)
-brew install stripe/purl/purl
-purl wallet add --type evm    # Create a wallet, fund it with USDC on Base
-purl -X POST -d '{"text": "https://example.com"}' https://qr.camelai.io
-\`\`\`
-
-Or with Node.js:
+### 1. Create a wallet
 
 \`\`\`js
+// npm install viem
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+
+const privateKey = generatePrivateKey();
+const account = privateKeyToAccount(privateKey);
+console.log("Address:", account.address);   // Fund this with USDC on Base
+console.log("Private Key:", privateKey);     // Save this securely
+\`\`\`
+
+Fund the address with USDC on Base using the [Base app](https://apps.apple.com/app/base-web3-wallet/id1278383455) or any wallet. $5–$10 is plenty.
+
+### 2. Make requests
+
+\`\`\`js
+// npm install @x402/fetch @x402/evm viem
 import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
 import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { privateKeyToAccount } from "viem/accounts";
@@ -60,6 +68,16 @@ const res = await pay("https://qr.camelai.io", {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ text: "https://example.com" }),
 });
+\`\`\`
+
+### Shell alternative: purl
+
+[purl](https://github.com/stripe/purl) is a curl-like CLI with built-in x402 support. Import the wallet you created above:
+
+\`\`\`bash
+brew install stripe/purl/purl
+purl wallet add --type evm --name my-agent --private-key $WALLET_PRIVATE_KEY --password mypass --set-active
+purl --password mypass -X POST -d '{"text": "https://example.com"}' https://qr.camelai.io
 \`\`\`
 
 ## Payment Options
