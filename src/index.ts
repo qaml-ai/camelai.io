@@ -1,167 +1,56 @@
 const MARKDOWN = `# camelai.io — x402 API Network
 
-Pay-per-request APIs for AI agents. No API keys, no subscriptions — just USDC micropayments on Base via the [x402 protocol](https://x402.org).
-
-Each service has a simple JSON API with explicit fields — no natural language parsing needed.
+Pay-per-request APIs for AI agents. USDC micropayments on Base, Polygon, or Solana via [x402](https://x402.org) — or buy credits with a credit card via Stripe.
 
 ## Services
 
-| Service | Domain | Price | Example Body |
-|---------|--------|-------|-------------|
-| QR Code | [qr.camelai.io](https://qr.camelai.io) | $0.001 | \`{"text": "https://example.com"}\` |
-| Screenshot | [screenshot.camelai.io](https://screenshot.camelai.io) | $0.01 | \`{"url": "https://example.com", "format": "png"}\` |
-| Email Verify | [verify.camelai.io](https://verify.camelai.io) | $0.005 | \`{"email": "user@example.com"}\` |
-| DNS Lookup | [dns.camelai.io](https://dns.camelai.io) | $0.001 | \`{"input": "DNS records for example.com"}\` |
-| Web Scraper | [scraper.camelai.io](https://scraper.camelai.io) | $0.005 | \`{"input": "scrape https://example.com"}\` |
-| Geocoding | [geo.camelai.io](https://geo.camelai.io) | $0.001 | \`{"input": "coordinates for 1600 Amphitheatre Parkway"}\` |
-| Image Resize | [resize.camelai.io](https://resize.camelai.io) | $0.001 | \`{"input": "resize https://example.com/photo.jpg to 200x200"}\` |
-| URL Shortener | [link.camelai.io](https://link.camelai.io) | $0.001 | \`{"url": "https://example.com/long/path"}\` |
-| Image Gen | [imagegen.camelai.io](https://imagegen.camelai.io) | $0.01 | \`{"input": "a sunset over mountains in watercolor style"}\` |
-| Disposable Email | [inbox.camelai.io](https://inbox.camelai.io) | $0.005 | POST \`/\` (no body) to create, POST \`/check\` with \`{"inbox_id": "..."}\` to read |
-| SMS Send | [sms.camelai.io](https://sms.camelai.io) | $0.01 | \`{"to": "+15551234567", "message": "Hello"}\` |
-| PDF to Text | [pdf.camelai.io](https://pdf.camelai.io) | $0.01 | \`{"url": "https://example.com/doc.pdf"}\` |
-| GPU | [gpu.camelai.io](https://gpu.camelai.io) | $0.50 | \`{"input": "spin up an A100 with pytorch image"}\` |
-| VPS | [vps.camelai.io](https://vps.camelai.io) | $0.005–$0.129 | POST \`/basic-30\` or \`/standard-60\` — see [full API](https://vps.camelai.io) |
-| Browser Session | [browser.camelai.io](https://browser.camelai.io) | $0.02 | POST \`/session\` (no body) for CDP websocket, POST \`/\` with \`{"input": "..."}\` for actions |
-| Deploy Worker | [deploy.camelai.io](https://deploy.camelai.io) | $0.01 | \`{"input": "deploy this worker that returns hello world"}\` |
-| File Upload | [files.camelai.io](https://files.camelai.io) | $0.001 | Upload raw file body, get a temporary signed URL (1hr) |
+Each service has its own docs at its domain. Visit any service URL for full API details.
+
+| Service | Domain | Price |
+|---------|--------|-------|
+| QR Code | [qr.camelai.io](https://qr.camelai.io) | $0.001 |
+| Screenshot | [screenshot.camelai.io](https://screenshot.camelai.io) | $0.01 |
+| Email Verify | [verify.camelai.io](https://verify.camelai.io) | $0.005 |
+| DNS Lookup | [dns.camelai.io](https://dns.camelai.io) | $0.001 |
+| Web Scraper | [scraper.camelai.io](https://scraper.camelai.io) | $0.005 |
+| Geocoding | [geo.camelai.io](https://geo.camelai.io) | $0.001 |
+| Image Resize | [resize.camelai.io](https://resize.camelai.io) | $0.001 |
+| URL Shortener | [link.camelai.io](https://link.camelai.io) | $0.001 |
+| Image Gen | [imagegen.camelai.io](https://imagegen.camelai.io) | $0.01 |
+| Disposable Email | [inbox.camelai.io](https://inbox.camelai.io) | $0.005 |
+| SMS Send | [sms.camelai.io](https://sms.camelai.io) | $0.01 |
+| PDF to Text | [pdf.camelai.io](https://pdf.camelai.io) | $0.01 |
+| GPU | [gpu.camelai.io](https://gpu.camelai.io) | $0.50 |
+| VPS / Sandbox | [vps.camelai.io](https://vps.camelai.io) | $0.005–$0.129 |
+| Browser Session | [browser.camelai.io](https://browser.camelai.io) | $0.02 |
+| Deploy Worker | [deploy.camelai.io](https://deploy.camelai.io) | $0.01 |
+| File Upload | [files.camelai.io](https://files.camelai.io) | $0.001 |
 
 ## How It Works
 
 1. \`POST\` to any service with the required JSON fields
 2. Receive a \`402 Payment Required\` response with payment details
-3. Sign a USDC payment on Base using your wallet
+3. Sign a USDC payment using your wallet
 4. Resend the request with the payment header
 5. Get your result
 
-## Quick Start (Node.js)
-
-\`\`\`js
-import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
-import { registerExactEvmScheme } from "@x402/evm/exact/client";
-import { privateKeyToAccount } from "viem/accounts";
-
-const signer = privateKeyToAccount(YOUR_PRIVATE_KEY);
-const client = new x402Client();
-registerExactEvmScheme(client, { signer });
-const pay = wrapFetchWithPayment(fetch, client);
-
-const res = await pay("https://qr.camelai.io", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ text: "https://example.com" }),
-});
-\`\`\`
-
-## Quick Start (purl CLI)
+## Quick Start
 
 \`\`\`bash
+# Install purl (Stripe's x402 CLI)
+brew install stripe/purl/purl
+purl wallet add --type evm    # Create a wallet, fund it with USDC on Base
 purl -X POST -d '{"text": "https://example.com"}' https://qr.camelai.io
 \`\`\`
 
-## Details
-
-- **Input:** Each service accepts \`POST /\` with typed JSON fields (see table above). Some services use \`{"input": "..."}\` for natural language.
-- **Networks:** Base (eip155:8453), Polygon (eip155:137), Solana — all USDC
-- **Facilitator:** Coinbase CDP (fee-free, KYT/OFAC compliant)
-- **OpenAPI:** Each service exposes \`/.well-known/openapi.json\`
-- **Service Index:** [/.well-known/services.json](https://camelai.io/.well-known/services.json)
-- **Bazaar:** All services are discoverable via the [CDP Bazaar](https://docs.cdp.coinbase.com/x402/bazaar)
-- **File Uploads:** Upload to [files.camelai.io](https://files.camelai.io) first to get a temporary URL, then pass that URL to other services.
-
-## VPS / Sandbox
-
-[vps.camelai.io](https://vps.camelai.io) provides time-boxed Ubuntu sandboxes on Cloudflare with Python, Node.js, and git pre-installed. Pay once, then use all endpoints for free until it expires.
-
-**Tiers:** POST to create — price is at Cloudflare cost, no markup.
-
-| Endpoint | Size | Duration | Price |
-|----------|------|----------|-------|
-| \`POST /basic-10\` | 1/4 vCPU, 1GB RAM | 10 min | $0.005 |
-| \`POST /basic-30\` | 1/4 vCPU, 1GB RAM | 30 min | $0.014 |
-| \`POST /basic-60\` | 1/4 vCPU, 1GB RAM | 60 min | $0.028 |
-| \`POST /standard-10\` | 1 vCPU, 6GB RAM | 10 min | $0.022 |
-| \`POST /standard-30\` | 1 vCPU, 6GB RAM | 30 min | $0.065 |
-| \`POST /standard-60\` | 1 vCPU, 6GB RAM | 60 min | $0.129 |
-
-**Free endpoints (after creation):**
-
-| Endpoint | Description |
-|----------|-------------|
-| \`POST /exec/:id\` | Run a shell command |
-| \`PUT /file/:id\` | Write a file |
-| \`GET /file/:id?path=\` | Read a file |
-| \`DELETE /file/:id?path=\` | Delete a file |
-| \`POST /mkdir/:id\` | Create directories |
-| \`POST /git/:id\` | Clone a git repo |
-| \`POST /run-code/:id\` | Execute Python/JS with rich output |
-| \`POST /start-process/:id\` | Start a background process (with \`wait_for_port\`) |
-| \`GET /processes/:id\` | List running processes |
-| \`DELETE /process/:id/:pid\` | Kill a process |
-| \`POST /expose/:id\` | Expose a port (returns a public preview URL) |
-| \`GET /status/:id\` | Check sandbox status |
-| \`DELETE /destroy/:id\` | Destroy sandbox early |
-
-## Payment Methods
-
-camelai.io supports two ways to pay for API requests:
-
-### x402 (USDC)
-
-The native payment method. Your agent signs a USDC micropayment for each request — no API keys, no accounts, no subscriptions.
-
-- **Networks:** Base, Polygon, or Solana (USDC on any)
-- **Cost:** Fractions of a cent per request
-- **Libraries:** [\`@x402/fetch\`](https://www.npmjs.com/package/@x402/fetch) + [\`@x402/evm\`](https://www.npmjs.com/package/@x402/evm) (Node.js) or [\`purl\`](https://github.com/stripe/purl) (CLI)
-
-### Stripe (Credit Card)
-
-Prefer traditional payments? Purchase API credits with a credit card via Stripe. You'll get an API key that works on all services — no wallet needed.
-
-- **Tiers:** $5 / $20 / $100 (one-time credit purchase)
-- **Usage:** Add \`Authorization: Bearer <your-api-key>\` to requests
-- **Checkout:** [Buy $5 credits](https://camelai.io/checkout?amount=5) · [Buy $20 credits](https://camelai.io/checkout?amount=20) · [Buy $100 credits](https://camelai.io/checkout?amount=100)
-
-## Setting Up an x402 Wallet for Your Agent
-
-Agents need their own wallet to sign x402 payments. You fund the agent's wallet from your personal wallet — never give the agent your own private key.
-
-### For Agents: Create a Wallet
-
-\`\`\`js
-// npm install viem
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-
-const privateKey = generatePrivateKey();
-const account = privateKeyToAccount(privateKey);
-
-console.log("Address:", account.address);  // Send USDC here
-console.log("Private Key:", privateKey);    // Store securely (env var, secret manager)
-\`\`\`
-
-You can also use [\`purl\`](https://github.com/stripe/purl) to create and manage wallets from the CLI: \`purl wallet add --type evm\`
-
-### Fund the Agent's Wallet with USDC
-
-The easiest way to buy and send USDC is the **Base** app (formerly Coinbase Wallet):
-
-1. **Download** the Base app — [iOS](https://apps.apple.com/app/base-web3-wallet/id1278383455) · [Android](https://play.google.com/store/apps/details?id=org.toshi)
-2. **Create a wallet** and back up your recovery phrase
-3. **Buy USDC** — tap Buy → select USDC → make sure the network is **Base** → pay with Apple Pay, Google Pay, or a debit card
-4. **Send USDC to your agent** — tap Send → paste your agent's wallet address → choose an amount ($5–$10 is plenty to start)
-
-USDC arrives in the agent's wallet within seconds.
-
-> **Tip:** Only send what the agent needs. You can always top up later.
-
-### Start Making Requests
+Or with Node.js:
 
 \`\`\`js
 import { x402Client, wrapFetchWithPayment } from "@x402/fetch";
 import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { privateKeyToAccount } from "viem/accounts";
 
-const signer = privateKeyToAccount(process.env.AGENT_WALLET_PRIVATE_KEY);
+const signer = privateKeyToAccount(process.env.WALLET_PRIVATE_KEY);
 const client = new x402Client();
 registerExactEvmScheme(client, { signer });
 const pay = wrapFetchWithPayment(fetch, client);
@@ -172,6 +61,19 @@ const res = await pay("https://qr.camelai.io", {
   body: JSON.stringify({ text: "https://example.com" }),
 });
 \`\`\`
+
+## Payment Options
+
+**x402 (USDC)** — sign a micropayment per request. Works on Base, Polygon, or Solana. No account needed.
+
+**Stripe (Credit Card)** — [buy credits](https://camelai.io/checkout?amount=5) ($5 / $20 / $100), get an API key, add \`Authorization: Bearer <key>\` to requests.
+
+## Details
+
+- **Networks:** Base, Polygon, Solana — all USDC
+- **Facilitator:** Coinbase CDP (fee-free)
+- **OpenAPI:** Each service exposes \`/.well-known/openapi.json\`
+- **Service Index:** [/.well-known/services.json](https://camelai.io/.well-known/services.json)
 
 Built by [camelAI](https://github.com/qaml-ai)
 `;
